@@ -14,21 +14,23 @@ app.get("/", (req, res) => {
 // SIGN ENDPOINT
 app.post("/sign", (req, res) => {
   try {
-    const { apiSecret, timestamp, recvWindow = 5000, query = "", body = "" } =
-      req.body;
+    const {
+      apiKey,
+      apiSecret,
+      timestamp,
+      recvWindow = 5000,
+      query = "",
+      body = ""
+    } = req.body;
 
-    if (!apiSecret || !timestamp) {
+    if (!apiKey || !apiSecret || !timestamp) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Body must be JSON string if object received
-    const requestBody =
-      typeof body === "object" ? JSON.stringify(body) : body;
+    const requestBody = typeof body === "object" ? JSON.stringify(body) : body;
 
-    // Construct pre-sign string
-    const payload = timestamp + apiSecret + query + requestBody;
+    const payload = `${timestamp}${apiKey}${recvWindow}${query}${requestBody}`;
 
-    // HMAC SHA256 signature
     const signature = crypto
       .createHmac("sha256", apiSecret)
       .update(payload)
@@ -36,8 +38,9 @@ app.post("/sign", (req, res) => {
 
     return res.json({
       signature,
-      payload,
       timestamp,
+      recvWindow,
+      payload
     });
   } catch (e) {
     console.error(e);
